@@ -33,19 +33,23 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSearch()}
-              className="flex-1 pl-12 pr-32 h-12 text-lg border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="flex-1 pl-12 pr-40 h-14 text-lg border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 touch-friendly"
             />
             <div className="absolute right-2 flex gap-2">
-              <Button onClick={onSearch} size="sm" className="h-8 px-3 rounded-full min-h-[32px] min-w-[32px]">
-                <Search className="h-4 w-4" />
+              <Button 
+                onClick={onSearch} 
+                size="lg" 
+                className="h-12 px-4 rounded-full min-h-[48px] min-w-[48px] touch-friendly"
+              >
+                <Search className="h-5 w-5" />
               </Button>
               <Button
                 onClick={onSave}
                 variant="outline"
-                size="sm"
-                className="h-8 px-3 rounded-full min-h-[32px] min-w-[32px] bg-transparent"
+                size="lg"
+                className="h-12 px-4 rounded-full min-h-[48px] min-w-[48px] bg-transparent touch-friendly"
               >
-                <Save className="h-4 w-4" />
+                <Save className="h-5 w-5" />
               </Button>
             </div>
           </div>

@@ -8,6 +8,7 @@ import { BookmarkDialog } from "./bookmark-dialog"
 import { DebugPanel } from "./debug-panel"
 import { ControllerStatus } from "./controller-status"
 import { useLocalMetadata } from "../hooks/use-local-metadata"
+import { useColorScheme } from "../hooks/use-color-scheme"
 
 interface Bookmark {
   id: string
@@ -46,6 +47,17 @@ export function TeslaBookmarkManager() {
 
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { fetchWebsiteMetadata } = useLocalMetadata()
+  const { isDark } = useColorScheme()
+
+  // Add gamepad deadzone tracking
+  const gamepadDeadzoneRef = useRef({
+    horizontalInDeadzone: true,
+    verticalInDeadzone: true,
+    lastMoveTime: 0,
+    moveThreshold: 0.7, // Higher threshold for activation
+    deadzoneThreshold: 0.3, // Must return below this to reset
+    moveCooldown: 200, // Minimum time between moves in ms
+  })
 
   // Load bookmarks from localStorage
   useEffect(() => {
@@ -64,42 +76,74 @@ export function TeslaBookmarkManager() {
     localStorage.setItem("tesla-bookmarks", JSON.stringify(bookmarks))
   }, [bookmarks])
 
-  // Debug info detection
+  // Debug info detection - enhanced to include color scheme
   useEffect(() => {
     const userAgent = navigator.userAgent
     const isTesla = userAgent.includes("Tesla") || userAgent.includes("QtWebEngine")
     const isTeslaYouTube = userAgent.includes("Tesla") && window.location.href.includes("youtube")
 
-    setDebugInfo(`Browser: ${userAgent.split(" ")[0]} | Tesla: ${isTesla} | Tesla YouTube: ${isTeslaYouTube}`)
-  }, [])
+    setDebugInfo(`Browser: ${userAgent} | Tesla: ${isTesla} | Tesla YouTube: ${isTeslaYouTube} | Dark Mode: ${isDark}`)
+  }, [isDark])
 
-  // Gamepad support
+  // Gamepad support with proper debouncing
   useEffect(() => {
     let animationFrame: number
+    const deadzone = gamepadDeadzoneRef.current
 
     const handleGamepadInput = () => {
       const gamepads = navigator.getGamepads()
       const gamepad = gamepads[0]
+      const now = Date.now()
 
       if (gamepad) {
         setGamepadState((prev) => {
           const newState = { ...prev, connected: true }
 
-          // D-pad navigation
-          if (gamepad.axes[0] > 0.5 || gamepad.buttons[15]?.pressed) {
-            // Right
-            newState.focusedIndex = Math.min(prev.focusedIndex + 1, bookmarks.length)
-          } else if (gamepad.axes[0] < -0.5 || gamepad.buttons[14]?.pressed) {
-            // Left
-            newState.focusedIndex = Math.max(prev.focusedIndex - 1, -1)
-          } else if (gamepad.axes[1] > 0.5 || gamepad.buttons[13]?.pressed) {
-            // Down
-            const cols = Math.floor((window.innerWidth - 64) / 280)
-            newState.focusedIndex = Math.min(prev.focusedIndex + cols, bookmarks.length)
-          } else if (gamepad.axes[1] < -0.5 || gamepad.buttons[12]?.pressed) {
-            // Up
-            const cols = Math.floor((window.innerWidth - 64) / 280)
-            newState.focusedIndex = Math.max(prev.focusedIndex - cols, -1)
+          // Check if axes are in deadzone (close to center)
+          const horizontalAxis = gamepad.axes[0]
+          const verticalAxis = gamepad.axes[1]
+
+          // Update deadzone status
+          if (Math.abs(horizontalAxis) < deadzone.deadzoneThreshold) {
+            deadzone.horizontalInDeadzone = true
+          }
+          if (Math.abs(verticalAxis) < deadzone.deadzoneThreshold) {
+            deadzone.verticalInDeadzone = true
+          }
+
+          // Only process movement if we're in deadzone and enough time has passed
+          const canMove = now - deadzone.lastMoveTime > deadzone.moveCooldown
+
+          // Horizontal movement
+          if (canMove && deadzone.horizontalInDeadzone) {
+            if (horizontalAxis > deadzone.moveThreshold || gamepad.buttons[15]?.pressed) {
+              // Right
+              newState.focusedIndex = Math.min(prev.focusedIndex + 1, bookmarks.length)
+              deadzone.horizontalInDeadzone = false
+              deadzone.lastMoveTime = now
+            } else if (horizontalAxis < -deadzone.moveThreshold || gamepad.buttons[14]?.pressed) {
+              // Left
+              newState.focusedIndex = Math.max(prev.focusedIndex - 1, -1)
+              deadzone.horizontalInDeadzone = false
+              deadzone.lastMoveTime = now
+            }
+          }
+
+          // Vertical movement
+          if (canMove && deadzone.verticalInDeadzone) {
+            if (verticalAxis > deadzone.moveThreshold || gamepad.buttons[13]?.pressed) {
+              // Down
+              const cols = Math.floor((window.innerWidth - 64) / 280)
+              newState.focusedIndex = Math.min(prev.focusedIndex + cols, bookmarks.length)
+              deadzone.verticalInDeadzone = false
+              deadzone.lastMoveTime = now
+            } else if (verticalAxis < -deadzone.moveThreshold || gamepad.buttons[12]?.pressed) {
+              // Up
+              const cols = Math.floor((window.innerWidth - 64) / 280)
+              newState.focusedIndex = Math.max(prev.focusedIndex - cols, -1)
+              deadzone.verticalInDeadzone = false
+              deadzone.lastMoveTime = now
+            }
           }
 
           // A button (select)
@@ -201,7 +245,7 @@ export function TeslaBookmarkManager() {
       <div className="max-w-7xl mx-auto px-8 py-12">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-foreground mb-4">Tesla Bookmarks</h1>
+          <h1 className="text-5xl font-bold text-foreground mb-4">Charge.Tube</h1>
           <p className="text-xl text-muted-foreground">Your personal bookmark manager optimized for Tesla browser</p>
         </div>
 
