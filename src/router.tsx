@@ -1,4 +1,4 @@
-import { createRouter as createTanStackRouter } from '@tanstack/react-router'
+import { createRouter as createTanStackRouter, createHashHistory } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 import { DefaultCatchBoundary } from './components/DefaultCatchBoundary'
 import { NotFound } from './components/NotFound'
@@ -10,6 +10,7 @@ export function createRouter() {
     defaultErrorComponent: DefaultCatchBoundary,
     defaultNotFoundComponent: () => <NotFound />,
     scrollRestoration: true,
+    history: createHashHistory(), // Use hash history for GitHub Pages
   })
 
   return router
