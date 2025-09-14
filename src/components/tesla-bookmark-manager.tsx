@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Theater } from "lucide-react"
 import { useLocalMetadata } from "../hooks/use-local-metadata"
 import { useColorScheme } from "../hooks/use-color-scheme"
+import { useTeslaMode } from "../hooks/use-tesla-mode"
 
 interface Bookmark {
   id: string
@@ -50,6 +51,7 @@ export function TeslaBookmarkManager() {
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { fetchWebsiteMetadata } = useLocalMetadata()
   const { isDark } = useColorScheme()
+  const { isTesla, isEditingEnabled, isTheatreButtonVisible } = useTeslaMode()
 
   // Add gamepad deadzone tracking
   const gamepadDeadzoneRef = useRef({
@@ -97,14 +99,14 @@ export function TeslaBookmarkManager() {
     localStorage.setItem("tesla-bookmarks", JSON.stringify(bookmarks))
   }, [bookmarks])
 
-  // Debug info detection - enhanced to include color scheme
+  // Debug info detection - enhanced to include Tesla mode
   useEffect(() => {
     const userAgent = navigator.userAgent
-    const isTesla = userAgent.includes("Tesla") || userAgent.includes("QtWebEngine")
+    const isTeslaDetected = userAgent.includes("Tesla") || userAgent.includes("QtWebEngine")
     const isTeslaYouTube = userAgent.includes("Tesla") && window.location.href.includes("youtube")
 
-    setDebugInfo(`Browser: ${userAgent} | Tesla: ${isTesla} | Tesla YouTube: ${isTeslaYouTube} | Dark Mode: ${isDark}`)
-  }, [isDark])
+    setDebugInfo(`Browser: ${userAgent} | Tesla: ${isTeslaDetected} | Tesla YouTube: ${isTeslaYouTube} | Dark Mode: ${isDark} | Editing: ${isEditingEnabled}`)
+  }, [isDark, isEditingEnabled])
 
   // Gamepad support with proper debouncing
   useEffect(() => {
@@ -213,6 +215,7 @@ export function TeslaBookmarkManager() {
   }
 
   const handleSaveBookmark = async () => {
+    if (!isEditingEnabled) return // Prevent saving in Tesla mode
     if (!formData.url.trim()) return
 
     const metadata = await fetchWebsiteMetadata(formData.url)
@@ -239,6 +242,8 @@ export function TeslaBookmarkManager() {
   }
 
   const handleEditBookmark = (bookmark: Bookmark) => {
+    if (!isEditingEnabled) return // Prevent editing in Tesla mode
+
     setEditingBookmark(bookmark)
     setFormData({
       title: bookmark.title,
@@ -250,6 +255,8 @@ export function TeslaBookmarkManager() {
   }
 
   const handleDeleteBookmark = (id: string) => {
+    if (!isEditingEnabled) return // Prevent deletion in Tesla mode
+
     setBookmarks((prev) => prev.filter((b) => b.id !== id))
   }
 
@@ -276,18 +283,20 @@ export function TeslaBookmarkManager() {
     <div className="min-h-screen bg-background">
       <ControllerStatus />
       
-      {/* Theatre Button */}
-      <div className="fixed top-4 left-4 z-50">
-        <Button 
-          onClick={handleOpenInTheatre}
-          variant="outline"
-          size="lg"
-          className="bg-background/80 backdrop-blur-sm border-2 hover:bg-accent min-h-[48px] touch-friendly"
-        >
-          <Theater className="h-5 w-5 mr-2" />
-          Open In Theatre
-        </Button>
-      </div>
+      {/* Theatre Button - Hidden in Tesla mode */}
+      {isTheatreButtonVisible && (
+        <div className="fixed top-4 left-4 z-50">
+          <Button 
+            onClick={handleOpenInTheatre}
+            variant="outline"
+            size="lg"
+            className="bg-background/80 backdrop-blur-sm border-2 hover:bg-accent min-h-[48px] touch-friendly"
+          >
+            <Theater className="h-5 w-5 mr-2" />
+            Open In Theatre
+          </Button>
+        </div>
+      )}
 
       <div className="max-w-7xl mx-auto px-8 py-12">
         {/* Header */}
@@ -303,12 +312,14 @@ export function TeslaBookmarkManager() {
           onSearchChange={setSearchQuery}
           onSearch={handleSearch}
           onSave={() => {
+            if (!isEditingEnabled) return // Prevent saving in Tesla mode
             if (searchQuery.trim()) {
               setFormData({ ...formData, url: searchQuery })
               setIsDialogOpen(true)
             }
           }}
           gamepadFocused={gamepadState.focusedIndex === -1 && gamepadState.connected}
+          isEditingEnabled={isEditingEnabled}
         />
 
         {/* Bookmarks Grid */}
@@ -325,27 +336,31 @@ export function TeslaBookmarkManager() {
             />
           ))}
 
-          {/* Add New Bookmark Card */}
-          <AddBookmarkCard
-            onClick={() => setIsDialogOpen(true)}
-            isGamepadFocused={gamepadState.connected && gamepadState.focusedIndex === filteredBookmarks.length}
-          />
+          {/* Add New Bookmark Card - Hidden in Tesla mode */}
+          {isEditingEnabled && (
+            <AddBookmarkCard
+              onClick={() => setIsDialogOpen(true)}
+              isGamepadFocused={gamepadState.connected && gamepadState.focusedIndex === filteredBookmarks.length}
+            />
+          )}
         </div>
 
-        {/* Bookmark Dialog */}
-        <BookmarkDialog
-          isOpen={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          editingBookmark={editingBookmark}
-          formData={formData}
-          onFormDataChange={setFormData}
-          onSave={handleSaveBookmark}
-          onCancel={() => {
-            setIsDialogOpen(false)
-            setEditingBookmark(null)
-            setFormData({ title: "", url: "", favicon: "", openGraphImage: "" })
-          }}
-        />
+        {/* Bookmark Dialog - Hidden in Tesla mode */}
+        {isEditingEnabled && (
+          <BookmarkDialog
+            isOpen={isDialogOpen}
+            onOpenChange={setIsDialogOpen}
+            editingBookmark={editingBookmark}
+            formData={formData}
+            onFormDataChange={setFormData}
+            onSave={handleSaveBookmark}
+            onCancel={() => {
+              setIsDialogOpen(false)
+              setEditingBookmark(null)
+              setFormData({ title: "", url: "", favicon: "", openGraphImage: "" })
+            }}
+          />
+        )}
 
         {/* Debug Panel */}
         <DebugPanel

@@ -12,10 +12,11 @@ interface SearchBarProps {
   onSearch: () => void
   onSave: () => void
   gamepadFocused: boolean
+  isEditingEnabled: boolean
 }
 
 export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
-  ({ searchQuery, onSearchChange, onSearch, onSave, gamepadFocused }, ref) => {
+  ({ searchQuery, onSearchChange, onSearch, onSave, gamepadFocused, isEditingEnabled }, ref) => {
     return (
       <div className="flex justify-center mb-8">
         <div className="relative max-w-2xl w-full">
@@ -33,7 +34,10 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onSearch()}
-              className="flex-1 pl-12 pr-40 h-14 text-lg border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 touch-friendly"
+              className={cn(
+                "flex-1 pl-12 h-14 text-lg border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 touch-friendly",
+                isEditingEnabled ? "pr-40" : "pr-20"
+              )}
             />
             <div className="absolute right-2 flex gap-2">
               <Button 
@@ -43,14 +47,16 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(
               >
                 <Search className="h-5 w-5" />
               </Button>
-              <Button
-                onClick={onSave}
-                variant="outline"
-                size="lg"
-                className="h-12 px-4 rounded-full min-h-[48px] min-w-[48px] bg-transparent touch-friendly"
-              >
-                <Save className="h-5 w-5" />
-              </Button>
+              {isEditingEnabled && (
+                <Button
+                  onClick={onSave}
+                  variant="outline"
+                  size="lg"
+                  className="h-12 px-4 rounded-full min-h-[48px] min-w-[48px] bg-transparent touch-friendly"
+                >
+                  <Save className="h-5 w-5" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
