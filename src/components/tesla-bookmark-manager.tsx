@@ -7,6 +7,8 @@ import { AddBookmarkCard } from "./add-bookmark-card"
 import { BookmarkDialog } from "./bookmark-dialog"
 import { DebugPanel } from "./debug-panel"
 import { ControllerStatus } from "./controller-status"
+import { Button } from "@/components/ui/button"
+import { Theater } from "lucide-react"
 import { useLocalMetadata } from "../hooks/use-local-metadata"
 import { useColorScheme } from "../hooks/use-color-scheme"
 
@@ -59,8 +61,27 @@ export function TeslaBookmarkManager() {
     moveCooldown: 200, // Minimum time between moves in ms
   })
 
-  // Load bookmarks from localStorage
+  // Load bookmarks from localStorage and handle config import
   useEffect(() => {
+    // Check for config import from URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const configParam = urlParams.get('c')
+    
+    if (configParam) {
+      try {
+        const decodedConfig = atob(configParam)
+        const importedBookmarks = JSON.parse(decodedConfig)
+        setBookmarks(importedBookmarks)
+        localStorage.setItem("tesla-bookmarks", JSON.stringify(importedBookmarks))
+        // Clean URL after import
+        window.history.replaceState({}, document.title, window.location.pathname)
+        return
+      } catch (error) {
+        console.error("Failed to import config:", error)
+      }
+    }
+
+    // Normal loading from localStorage
     const saved = localStorage.getItem("tesla-bookmarks")
     if (saved) {
       try {
@@ -232,6 +253,19 @@ export function TeslaBookmarkManager() {
     setBookmarks((prev) => prev.filter((b) => b.id !== id))
   }
 
+  const handleOpenInTheatre = () => {
+    try {
+      const config = JSON.stringify(bookmarks)
+      const encodedConfig = btoa(config)
+      const theatreUrl = `${window.location.origin}${window.location.pathname}?c=${encodedConfig}`
+      
+      // Use YouTube redirect trick for Tesla compatibility
+      window.location.href = `https://youtube.com/redirect?q=${encodeURIComponent(theatreUrl)}`
+    } catch (error) {
+      console.error("Failed to create theatre link:", error)
+    }
+  }
+
   const filteredBookmarks = bookmarks.filter(
     (bookmark) =>
       bookmark.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -241,6 +275,19 @@ export function TeslaBookmarkManager() {
   return (
     <div className="min-h-screen bg-background">
       <ControllerStatus />
+      
+      {/* Theatre Button */}
+      <div className="fixed top-4 left-4 z-50">
+        <Button 
+          onClick={handleOpenInTheatre}
+          variant="outline"
+          size="lg"
+          className="bg-background/80 backdrop-blur-sm border-2 hover:bg-accent min-h-[48px] touch-friendly"
+        >
+          <Theater className="h-5 w-5 mr-2" />
+          Open In Theatre
+        </Button>
+      </div>
 
       <div className="max-w-7xl mx-auto px-8 py-12">
         {/* Header */}

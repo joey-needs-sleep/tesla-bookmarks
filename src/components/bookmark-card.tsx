@@ -56,7 +56,7 @@ export function BookmarkCard({
           tabIndex={0}
           className={cn(
             "group cursor-pointer transition-all duration-300 hover:scale-105 min-h-[200px] relative overflow-hidden rounded-2xl border-2 touch-friendly",
-            isGamepadFocused && "scale-105 animate-pulse",
+            isGamepadFocused && "ring-4 ring-red-500 scale-105",
           )}
           onClick={onClick}
           onTouchStart={handleTouchStart}
@@ -70,19 +70,16 @@ export function BookmarkCard({
           style={{
             ...(isGamepadFocused
               ? {
-                  background: `radial-gradient(circle at center, ${dominantColor}80 0%, ${bookmark.faviconColors[0] || "#c8102e"}60 30%, ${bookmark.faviconColors[1] || "#f97316"}40 60%, rgba(0,0,0,0.8) 80%)`,
-                  boxShadow: `0 0 60px ${dominantColor}, 0 0 100px ${dominantColor}80, 0 0 140px ${dominantColor}60, inset 0 0 40px ${dominantColor}40`,
                   borderColor: dominantColor,
                   borderWidth: "3px",
                 }
               : {
-                  background: `linear-gradient(135deg, ${dominantColor}20, ${bookmark.faviconColors[0] || "#c8102e"}20, ${bookmark.faviconColors[1] || "#f97316"}20)`,
                   borderColor: dominantColor,
                   borderWidth: "2px",
                 }),
           }}
         >
-          <CardContent className="p-4 bg-card/95 backdrop-blur-sm m-1 h-full relative z-10 rounded-xl">
+          <CardContent className="p-4 bg-card backdrop-blur-sm h-full relative z-10 rounded-xl">
             <div className="flex items-start justify-between mb-3">
               <img
                 src={bookmark.favicon || "/placeholder.svg"}

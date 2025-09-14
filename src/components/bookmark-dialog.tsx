@@ -59,14 +59,16 @@ export function BookmarkDialog({
       <DialogContent 
         className={cn(
           "sm:max-w-md",
-          isKeyboardOpen && "top-4 translate-y-0"
+          // Always position above halfway mark
+          "top-1/4 -translate-y-1/4",
+          isKeyboardOpen && "top-8 translate-y-0"
         )}
         style={{
           ...(isKeyboardOpen && {
             position: 'fixed',
-            top: '1rem',
+            top: '2rem',
             transform: 'translateX(-50%)',
-            maxHeight: `calc(100vh - ${keyboardHeight}px - 2rem)`,
+            maxHeight: 'calc(50vh - 2rem)', // Restrict height when keyboard is open
             overflowY: 'auto'
           })
         }}
